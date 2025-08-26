@@ -121,6 +121,23 @@ export default function QuestionCard() {
 
       const response = await getNextQuestion(requestBody);
       
+      // Check if interview is completed
+      if (response.is_completed) {
+        dispatch({
+          type: "COMPLETE_INTERVIEW",
+          payload: {
+            question: state.current,
+            answer: answer,
+            advisor: state.advisor,
+            finalMessage: response.question
+          }
+        });
+        
+        // Speak the final message
+        speak(response.question);
+        return;
+      }
+      
       // Update state with the new question and answer
       dispatch({
         type: "ADD",
@@ -159,6 +176,19 @@ export default function QuestionCard() {
       };
 
       const response = await getNextQuestion(requestBody);
+      
+      // Check if interview is completed
+      if (response.is_completed) {
+        dispatch({
+          type: "COMPLETE_INTERVIEW",
+          payload: {
+            finalMessage: response.question
+          }
+        });
+        
+        speak(response.question);
+        return;
+      }
       
       dispatch({
         type: "NEXT_QUESTION",
@@ -238,32 +268,53 @@ export default function QuestionCard() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-3">
-        {recognitionState === 'listening' ? (
+      {state.isCompleted ? (
+        <div className="text-center space-y-4">
+          <div className="p-4 bg-green-900/30 border border-green-700/50 rounded-lg">
+            <h3 className="text-lg font-semibold text-green-300 mb-2">
+              🎉 Interview Completed!
+            </h3>
+            <p className="text-green-200">
+              Thank you for participating in this mock interview. 
+              You can review your responses below.
+            </p>
+          </div>
+          
           <button
-            onClick={stopListening}
-            className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors"
           >
-            Stop Recording
+            Start New Interview
           </button>
-        ) : (
+        </div>
+      ) : (
+        <div className="flex gap-3">
+          {recognitionState === 'listening' ? (
+            <button
+              onClick={stopListening}
+              className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Stop Recording
+            </button>
+          ) : (
+            <button
+              onClick={startListening}
+              disabled={recognitionState === 'processing' || isLoading}
+              className={`flex-1 py-3 px-4 text-white rounded-lg font-medium transition-colors disabled:opacity-50 ${getButtonColor()}`}
+            >
+              {isLoading ? 'Processing...' : getButtonText()}
+            </button>
+          )}
+          
           <button
-            onClick={startListening}
-            disabled={recognitionState === 'processing' || isLoading}
-            className={`flex-1 py-3 px-4 text-white rounded-lg font-medium transition-colors disabled:opacity-50 ${getButtonColor()}`}
+            onClick={skipQuestion}
+            disabled={isLoading || recognitionState !== 'idle'}
+            className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
           >
-            {isLoading ? 'Processing...' : getButtonText()}
+            Skip
           </button>
-        )}
-        
-        <button
-          onClick={skipQuestion}
-          disabled={isLoading || recognitionState !== 'idle'}
-          className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-        >
-          Skip
-        </button>
-      </div>
+        </div>
+      )}
 
       {/* Interview History */}
       {state.history.length > 0 && (

@@ -17,6 +17,8 @@ export type State = {
   advisor: string;               // latest advisor tip
   currentPhase?: string;         // current interview phase
   currentTopic?: string;         // current topic being discussed
+  isCompleted: boolean;          // whether interview is finished
+  finalMessage?: string;         // final closing message
 };
 
 type Action =
@@ -52,6 +54,15 @@ type Action =
         topic?: string;
       }
     }
+  | {
+      type: "COMPLETE_INTERVIEW";
+      payload: {
+        question?: string;
+        answer?: string;
+        advisor?: string;
+        finalMessage: string;
+      }
+    }
   | { type: "RESET" };
 
 const initial: State = {
@@ -63,6 +74,8 @@ const initial: State = {
   advisor: "",
   currentPhase: undefined,
   currentTopic: undefined,
+  isCompleted: false,
+  finalMessage: undefined,
 };
 
 function reducer(state: State, action: Action): State {
@@ -103,6 +116,27 @@ function reducer(state: State, action: Action): State {
         advisor: action.payload.advisor,
         currentPhase: action.payload.phase,
         currentTopic: action.payload.topic,
+      };
+    
+    case "COMPLETE_INTERVIEW":
+      const finalHistory = [...state.history];
+      if (action.payload.question && action.payload.answer) {
+        finalHistory.push({
+          question: action.payload.question,
+          answer: action.payload.answer,
+          advisor: action.payload.advisor || "",
+          topic: state.currentTopic,
+          phase: state.currentPhase
+        });
+      }
+      
+      return {
+        ...state,
+        history: finalHistory,
+        current: action.payload.finalMessage,
+        isCompleted: true,
+        finalMessage: action.payload.finalMessage,
+        step: 2, // Move to report/completion step
       };
     
     case "RESET":
