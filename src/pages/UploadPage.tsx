@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useInterview } from "../contexts/InterviewContext";
-import { uploadCv } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 export default function UploadPage() {
@@ -9,23 +8,54 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [job, setJob] = useState("");
+  const [error, setError] = useState("");
 
   async function handleFile() {
-  if (!file || !job.trim()) return;
-  setLoading(true);
+    if (!file || !job.trim()) return;
+    setLoading(true);
+    setError("");
 
-  const form = new FormData();
-  form.append("file", file);
-  form.append("job", job);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("job", job);
 
-  const res = await fetch("http://localhost:8000/upload", { method: "POST", body: form });
-  const { question, cv, job: jobText } = await res.json();
+      const res = await fetch("http://localhost:8000/upload", { 
+        method: "POST", 
+        body: form 
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Upload failed: ${res.statusText}`);
+      }
 
-  localStorage.setItem("job", jobText);
-  localStorage.setItem("cv", cv); // **real text**
-  dispatch({ type: "START", payload: { question, cv, job: jobText } });
-  nav("/interview");
-}
+      const data = await res.json();
+      
+      // Handle the new backend response format
+      const { question, advisor_tip, cv, job: jobText, phase, topic } = data;
+
+      // Store in localStorage for persistence
+      localStorage.setItem("job", jobText);
+      localStorage.setItem("cv", cv);
+      
+      dispatch({ 
+        type: "START", 
+        payload: { 
+          question, 
+          job: jobText, 
+          cv,
+          advisor: advisor_tip,
+          phase,
+          topic
+        } 
+      });
+      nav("/interview");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -46,9 +76,15 @@ export default function UploadPage() {
           placeholder="Paste the job ad / role description here…"
           value={job}
           onChange={(e) => setJob(e.target.value)}
-          className="w-full mt-4 p-2 rounded bg-slate-700"
+          className="w-full mt-4 p-2 rounded bg-slate-700 text-white placeholder-slate-400"
           rows={3}
         />
+
+        {error && (
+          <div className="p-3 bg-red-900/50 border border-red-700 rounded text-red-200">
+            {error}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center">
@@ -58,9 +94,9 @@ export default function UploadPage() {
           <button
             onClick={handleFile}
             disabled={!file || !job.trim()}
-            className="w-full mt-2 py-2 bg-sky-600 rounded disabled:opacity-50"
+            className="w-full mt-2 py-2 bg-sky-600 rounded disabled:opacity-50 hover:bg-sky-700 transition-colors"
           >
-            Upload & Start
+            Upload & Start Interview
           </button>
         )}
       </div>

@@ -1,18 +1,57 @@
-// src/contexts/InterviewContext.tsx
 import { createContext, useContext, useReducer, ReactNode } from "react";
+
+export type HistoryItem = {
+  question: string;
+  answer: string;
+  advisor: string;
+  topic?: string;
+  phase?: string;
+};
 
 export type State = {
   step: 0 | 1 | 2;               // 0 = upload, 1 = interview, 2 = report
   job: string;                   // job description
   cv: string;                    // résumé text
-  history: { q: string; a: string; advisor: string }[]; // all Q-A pairs
+  history: HistoryItem[];        // all Q-A pairs with metadata
   current: string;               // current question
   advisor: string;               // latest advisor tip
+  currentPhase?: string;         // current interview phase
+  currentTopic?: string;         // current topic being discussed
 };
 
 type Action =
-  | { type: "START"; payload: { question: string; job: string; cv: string } }
-  | { type: "ADD"; payload: { answer: string; question: string; advisor: string } }
+  | { 
+      type: "START"; 
+      payload: { 
+        question: string; 
+        job: string; 
+        cv: string; 
+        advisor: string;
+        phase?: string;
+        topic?: string;
+      } 
+    }
+  | { 
+      type: "ADD"; 
+      payload: { 
+        question: string;
+        answer: string; 
+        advisor: string;
+        nextQuestion: string;
+        nextAdvisor: string;
+        phase?: string;
+        topic?: string;
+      } 
+    }
+  | {
+      type: "NEXT_QUESTION";
+      payload: {
+        question: string;
+        advisor: string;
+        phase?: string;
+        topic?: string;
+      }
+    }
   | { type: "RESET" };
 
 const initial: State = {
@@ -22,6 +61,8 @@ const initial: State = {
   history: [],
   current: "",
   advisor: "",
+  currentPhase: undefined,
+  currentTopic: undefined,
 };
 
 function reducer(state: State, action: Action): State {
@@ -33,17 +74,40 @@ function reducer(state: State, action: Action): State {
         job: action.payload.job,
         cv: action.payload.cv,
         current: action.payload.question,
+        advisor: action.payload.advisor,
+        currentPhase: action.payload.phase,
+        currentTopic: action.payload.topic,
       };
+    
     case "ADD":
       return {
         ...state,
-        history: [...state.history, { q: action.payload.question, a: action.payload.answer, advisor: action.payload.advisor }],
-        current: action.payload.question,
-        advisor: action.payload.advisor,
+        history: [...state.history, { 
+          question: action.payload.question, 
+          answer: action.payload.answer, 
+          advisor: action.payload.advisor,
+          topic: state.currentTopic,
+          phase: state.currentPhase
+        }],
+        current: action.payload.nextQuestion,
+        advisor: action.payload.nextAdvisor,
+        currentPhase: action.payload.phase,
+        currentTopic: action.payload.topic,
         step: 1,
       };
+    
+    case "NEXT_QUESTION":
+      return {
+        ...state,
+        current: action.payload.question,
+        advisor: action.payload.advisor,
+        currentPhase: action.payload.phase,
+        currentTopic: action.payload.topic,
+      };
+    
     case "RESET":
       return initial;
+    
     default:
       return state;
   }
