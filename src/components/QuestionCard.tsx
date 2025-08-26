@@ -105,6 +105,11 @@ export default function QuestionCard() {
     setIsLoading(true);
     
     try {
+      // Check if we're getting very short answers repeatedly
+      const recentAnswers = state.history.slice(-2).map(h => h.answer);
+      const isVeryShort = answer.trim().split(' ').length <= 2;
+      const hasRecentShortAnswers = recentAnswers.some(a => a.split(' ').length <= 2);
+      
       // Build proper history format matching backend expectations
       const newHistoryItem = {
         question: state.current,
@@ -152,8 +157,13 @@ export default function QuestionCard() {
         }
       });
 
-      // Speak the next question
-      speak(response.question);
+      // Provide helpful feedback for very short answers
+      if (isVeryShort && hasRecentShortAnswers) {
+        const encouragement = "I understand you might prefer brief answers. That's perfectly fine! ";
+        speak(encouragement + response.question);
+      } else {
+        speak(response.question);
+      }
       
     } catch (error) {
       console.error('Error getting next question:', error);

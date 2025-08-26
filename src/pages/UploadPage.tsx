@@ -1,4 +1,3 @@
-// UploadPage.tsx - Fixed to handle new backend response format
 import { useState } from "react";
 import { useInterview } from "../contexts/InterviewContext";
 import { useNavigate } from "react-router-dom";
