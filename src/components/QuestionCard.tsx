@@ -24,8 +24,7 @@ export default function QuestionCard() {
 
   /* --- fetch next --- */
   async function nextStep(answer?: string) {
-    const body = { job: state.job, cv: state.cv, history };
-    if (answer) body.history = [...history, { q: question, a: answer, advisor }];
+    const body = { job: state.job, cv: state.cv, history: history };    if (answer) body.history = [...history, { q: question, a: answer, advisor }];
     const res  = await fetch(BACKEND + "/step", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
     const { text, advisor: a } = await res.json();
     setQuestion(text);
