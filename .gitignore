@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+*.log
+
+# Node
+node_modules/
+dist/
+*.local
+.vite
+.nyc_output
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+*.egg-info/
+.build/
