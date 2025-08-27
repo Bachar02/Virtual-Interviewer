@@ -105,12 +105,7 @@ export default function QuestionCard() {
     setIsLoading(true);
     
     try {
-      // Check if we're getting very short answers repeatedly
-      const recentAnswers = state.history.slice(-2).map(h => h.answer);
-      const isVeryShort = answer.trim().split(' ').length <= 2;
-      const hasRecentShortAnswers = recentAnswers.some(a => a.split(' ').length <= 2);
-      
-      // Build proper history format matching backend expectations
+      // Build proper history format
       const newHistoryItem = {
         question: state.current,
         answer: answer,
@@ -138,7 +133,6 @@ export default function QuestionCard() {
           }
         });
         
-        // Speak the final message
         speak(response.question);
         return;
       }
@@ -157,19 +151,41 @@ export default function QuestionCard() {
         }
       });
 
-      // Provide helpful feedback for very short answers
-      if (isVeryShort && hasRecentShortAnswers) {
-        const encouragement = "I understand you might prefer brief answers. That's perfectly fine! ";
-        speak(encouragement + response.question);
+      // Determine if this is a conversational response or interview question
+      const isConversationalResponse = response.topic?.includes('compensation') || 
+                                     response.topic?.includes('culture') || 
+                                     response.topic?.includes('development') ||
+                                     response.question.toLowerCase().includes('that\'s a great question');
+
+      if (isConversationalResponse) {
+        // Speak more naturally for conversational responses
+        speak(response.question);
       } else {
+        // Normal interview question flow
         speak(response.question);
       }
       
     } catch (error) {
       console.error('Error getting next question:', error);
+      // Fallback to conversational error handling
+      const fallbackResponse = "I appreciate your response. Could you tell me more about that?";
+      speak(fallbackResponse);
     } finally {
       setIsLoading(false);
       setRecognitionState('idle');
+    }
+  };
+
+  // Add conversation state indicators
+  const getConversationState = () => {
+    if (state.currentTopic?.includes('compensation')) {
+      return { type: 'discussion', label: 'Discussing Compensation' };
+    } else if (state.currentTopic?.includes('culture')) {
+      return { type: 'discussion', label: 'Discussing Company Culture' };
+    } else if (state.currentTopic?.includes('development')) {
+      return { type: 'discussion', label: 'Discussing Career Development' };
+    } else {
+      return { type: 'interview', label: `${state.currentPhase} Phase` };
     }
   };
 
@@ -243,13 +259,26 @@ export default function QuestionCard() {
 
   return (
     <div className="w-full max-w-2xl p-6 space-y-6 rounded bg-slate-800">
-      {/* Interview Progress */}
+      {/* Enhanced Interview Progress */}
       {state.currentPhase && (
         <div className="text-sm text-slate-400 mb-4">
-          Phase: <span className="capitalize text-sky-400">{state.currentPhase}</span>
-          {state.currentTopic && (
-            <> | Topic: <span className="text-green-400">{state.currentTopic}</span></>
-          )}
+          {(() => {
+            const convState = getConversationState();
+            return (
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  convState.type === 'discussion' 
+                    ? 'bg-blue-900/30 text-blue-300' 
+                    : 'bg-sky-900/30 text-sky-400'
+                }`}>
+                  {convState.label}
+                </span>
+                {state.currentTopic && (
+                  <> | Topic: <span className="text-green-400">{state.currentTopic}</span></>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -259,10 +288,30 @@ export default function QuestionCard() {
           {state.current}
         </h2>
         
+        {/* Updated advisor tip display to handle conversational context */}
         {state.advisor && (
-          <div className="p-3 bg-green-900/30 border border-green-700/50 rounded">
-            <p className="text-sm text-green-300">
-              <strong>💡 Tip:</strong> {state.advisor}
+          <div className={`p-3 border rounded ${
+            state.currentTopic?.includes('compensation') || 
+            state.currentTopic?.includes('culture') || 
+            state.currentTopic?.includes('development')
+              ? 'bg-blue-900/30 border-blue-700/50'  // Different color for discussions
+              : 'bg-green-900/30 border-green-700/50' // Normal interview tips
+          }`}>
+            <p className={`text-sm ${
+              state.currentTopic?.includes('compensation') || 
+              state.currentTopic?.includes('culture') || 
+              state.currentTopic?.includes('development')
+                ? 'text-blue-300'
+                : 'text-green-300'
+            }`}>
+              <strong>
+                {state.currentTopic?.includes('compensation') || 
+                 state.currentTopic?.includes('culture') || 
+                 state.currentTopic?.includes('development')
+                  ? '💬 Discussion: '
+                  : '💡 Tip: '}
+              </strong>
+              {state.advisor}
             </p>
           </div>
         )}
