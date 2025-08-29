@@ -1,4 +1,3 @@
-# test_server.py - Simple version for debugging
 import os
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,7 +38,6 @@ async def upload_cv(file: UploadFile = File(...), job: str = Form("")):
         print(f"Content type: {file.content_type}")
         print(f"Job length: {len(job)}")
         
-        # Basic validation
         if not file.filename:
             raise HTTPException(status_code=400, detail="No file provided")
             
