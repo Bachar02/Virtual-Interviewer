@@ -1,9 +1,6 @@
 import os
 
-def selective_export(output_file="project_context.txt"):
-    """Export key files with better organization."""
-    
-    # Define which files to include (customize this list)
+def selective_export(output_file="project_context.txt"):    
     important_files = [
         'src/components/QuestionCard.tsx',
         'src/contexts/InterviewContext.tsx', 
